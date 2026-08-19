@@ -31,4 +31,9 @@ public interface GlobalConstants {
      * 三方认证 redis key
      */
     String SOCIAL_AUTH_CODE_KEY = GLOBAL_REDIS_KEY + "social_auth_codes:";
+
+    /**
+     * TOTP 两步验证登录中间态 redis key
+     */
+    String TOTP_STEP_KEY = GLOBAL_REDIS_KEY + "totp_step:";
 }

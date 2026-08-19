@@ -29,6 +29,7 @@ import org.dromara.system.mapper.SysUserMapper;
 import org.dromara.web.domain.vo.LoginVo;
 import org.dromara.web.service.IAuthStrategy;
 import org.dromara.web.service.SysLoginService;
+import org.dromara.web.service.SysTotpService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -43,6 +44,7 @@ public class PasswordAuthStrategy implements IAuthStrategy {
 
     private final CaptchaProperties captchaProperties;
     private final SysLoginService loginService;
+    private final SysTotpService totpService;
     private final SysUserMapper userMapper;
 
     /**
@@ -70,6 +72,10 @@ public class PasswordAuthStrategy implements IAuthStrategy {
         loginService.checkLogin(LoginType.PASSWORD, username, () -> !BCrypt.checkpw(password, user.getPassword()));
         // 此处可根据登录用户的数据不同 自行创建 loginUser
         LoginUser loginUser = loginService.buildLoginUser(user);
+        // 开启 TOTP 两步验证时，密码校验通过后先下发验证会话，动态口令校验通过后再签发 token
+        if (totpService.isEnabled()) {
+            return totpService.buildTotpStep(loginUser, client);
+        }
         loginUser.setClientKey(client.getClientKey());
         loginUser.setDeviceType(client.getDeviceType());
         SaLoginParameter model = IAuthStrategy.buildLoginParameter(client);

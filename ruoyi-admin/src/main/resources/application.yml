@@ -111,6 +111,16 @@ security:
     - /warm-flow-ui/config
     - /snail-chat/**
     - /api/snail/chat/**
+  # TOTP 两步验证（Google Authenticator 等认证器）
+  totp:
+    # 是否开启两步验证
+    enabled: true
+    # 令牌签发者（展示在认证器中）
+    issuer: RuoYi-Vue-Plus
+    # 验证会话有效期（分钟）
+    stepTimeout: 5
+    # 最大验证失败次数
+    maxRetryCount: 5
 
 # MyBatisPlus配置
 # https://baomidou.com/config/

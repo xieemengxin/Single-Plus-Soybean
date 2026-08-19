@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.template.TemplateConfig;
 import cn.hutool.extra.template.TemplateEngine;
 import cn.hutool.extra.template.TemplateUtil;
@@ -105,6 +106,10 @@ public class TemplateEngineUtils {
         context.put("moduleName", moduleName);
         context.put("BusinessName", StringUtils.capitalize(businessName));
         context.put("businessName", businessName);
+        // soybean 模板派生变量：Api 命名空间使用首字母大写模块名，目录与文件名使用 kebab-case
+        context.put("ModuleName", StringUtils.capitalize(moduleName));
+        context.put("moduleKebab", StrUtil.toSymbolCase(moduleName, '-'));
+        context.put("businessKebab", StrUtil.toSymbolCase(businessName, '-'));
         context.put("basePackage", getPackagePrefix(packageName));
         context.put("packageName", packageName);
         context.put("author", genTable.getFunctionAuthor());
@@ -117,6 +122,7 @@ public class TemplateEngineUtils {
         context.put("table", genTable);
         context.put("dicts", dicts);
         context.put("dictsNoSymbol", StringUtils.replace(dicts, "'", StringUtils.EMPTY));
+        context.put("dictList", getDictList(genTable));
         setColumnFeatureContext(context, genTable, dicts);
         // 向模板上下文写入菜单相关变量
         String options = genTable.getOptions();
@@ -301,6 +307,10 @@ public class TemplateEngineUtils {
         // 前端 API 与类型模板
         templates.add(getTemplate(getFrontendApiTemplatePath(frontendType)));
         templates.add(getTemplate(getFrontendTypesTemplatePath(frontendType)));
+        // 前端附加模板（如 soybean 的 search.vue、operate-drawer.vue），按模板目录扫描动态加载
+        for (String extraTemplatePath : getFrontendExtraTemplatePaths(frontendType)) {
+            templates.add(getTemplate(extraTemplatePath));
+        }
         // 数据库模板
         DataBaseType dataBaseType = DataBaseHelper.getDataBaseType(dsName);
         if (dataBaseType.isOracle()) {
@@ -320,6 +330,43 @@ public class TemplateEngineUtils {
             templates.add(getTemplate(getFrontendIndexTreeTemplatePath(frontendType)));
         }
         return templates;
+    }
+
+    /**
+     * 扫描前端模板目录下除 api、types 与 index 页面之外的附加模板（如 soybean 的 search.vue、operate-drawer.vue）。
+     * vue、react 目录下当前没有附加模板，扫描结果为空，既有行为保持不变。
+     *
+     * @param frontendType 前端模板类型
+     * @return 附加模板路径列表（按文件名排序）
+     */
+    private static List<String> getFrontendExtraTemplatePaths(String frontendType) {
+        String type = resolveFrontendType(frontendType);
+        String templatePathPattern = StringUtils.format("{}/{}/*{}", GenConstants.TEMPLATE_ROOT_PATH, type, GenConstants.TEMPLATE_FILE_SUFFIX);
+        String resourcePattern = GenConstants.TEMPLATE_RESOURCE_PREFIX + templatePathPattern;
+        try {
+            Resource[] resources = RESOURCE_PATTERN_RESOLVER.getResources(resourcePattern);
+            return Arrays.stream(resources)
+                .map(Resource::getFilename)
+                .filter(StringUtils::isNotBlank)
+                .filter(fileName -> !isFixedFrontendTemplate(fileName))
+                .sorted()
+                .map(fileName -> StringUtils.format("{}/{}/{}", GenConstants.TEMPLATE_ROOT_PATH, type, fileName))
+                .toList();
+        } catch (IOException e) {
+            throw new ServiceException(StringUtils.format("读取前端附加模板失败: {}", templatePathPattern), e);
+        }
+    }
+
+    /**
+     * 判断前端模板文件是否为固定模板（api、types 或 index 页面模板），固定模板不作为附加模板重复加载。
+     *
+     * @param fileName 模板文件名
+     * @return 固定模板返回 {@code true}
+     */
+    private static boolean isFixedFrontendTemplate(String fileName) {
+        return StringUtils.equalsAny(fileName, GenConstants.FRONTEND_API_TEMPLATE_NAME, GenConstants.FRONTEND_TYPES_TEMPLATE_NAME)
+            || fileName.startsWith(GenConstants.FRONTEND_INDEX_TEMPLATE_PREFIX + ".")
+            || fileName.startsWith(GenConstants.FRONTEND_INDEX_TREE_TEMPLATE_PREFIX + ".");
     }
 
     /**
@@ -359,6 +406,10 @@ public class TemplateEngineUtils {
         String mybatisPath = MYBATIS_PATH + "/" + moduleName;
         String frontendPath = getFrontendPath(genTable.getFrontendType());
         String frontendPagePath = getFrontendPagePath(genTable.getFrontendType());
+        // soybean 前端模板遵循 soybean-admin 目录约定，输出路径与 vue/react 不同，单独映射
+        if (template.startsWith(GenConstants.SOYBEAN_TEMPLATE_ROOT_PATH + "/")) {
+            return getSoybeanFileName(template, genTable);
+        }
         // templatePath
         // genFilePathFormat
         if (template.contains("domain.java.")) {
@@ -389,6 +440,36 @@ public class TemplateEngineUtils {
         } else if (isFrontendPageTemplate(template, GenConstants.FRONTEND_INDEX_TREE_TEMPLATE_PREFIX)) {
             fileName = StringUtils.format("{}/{}/{}/{}/index.{}", frontendPath, frontendPagePath, moduleName, businessName,
                 getFrontendPageExtension(template, GenConstants.FRONTEND_INDEX_TREE_TEMPLATE_PREFIX));
+        }
+        return fileName;
+    }
+
+    /**
+     * 获取 soybean 前端模板生成文件路径。
+     * <p>目录约定与 soybean-admin 保持一致：页面位于 views/{模块}/{业务}/，
+     * API 位于 service/api/{模块}/{业务}.ts，类型声明位于 typings/api/{模块}.{业务}.api.d.ts，
+     * 模块名与业务名均使用 kebab-case，URL 中的模块名仍保持原样以匹配网关路由前缀。</p>
+     *
+     * @param template 模板路径
+     * @param genTable 代码生成业务表对象
+     * @return 模板对应的目标文件相对路径
+     */
+    private static String getSoybeanFileName(String template, GenTable genTable) {
+        String fileName = "";
+        String frontendPath = getFrontendPath(genTable.getFrontendType());
+        String moduleKebab = StrUtil.toSymbolCase(genTable.getModuleName(), '-');
+        String businessKebab = StrUtil.toSymbolCase(genTable.getBusinessName(), '-');
+        if (template.contains("api.ts.")) {
+            fileName = StringUtils.format("{}/service/api/{}/{}.ts", frontendPath, moduleKebab, businessKebab);
+        } else if (template.contains("types.ts.")) {
+            fileName = StringUtils.format("{}/typings/api/{}.{}.api.d.ts", frontendPath, moduleKebab, businessKebab);
+        } else if (template.contains("search.vue.")) {
+            fileName = StringUtils.format("{}/views/{}/{}/modules/{}-search.vue", frontendPath, moduleKebab, businessKebab, businessKebab);
+        } else if (template.contains("operate-drawer.vue.")) {
+            fileName = StringUtils.format("{}/views/{}/{}/modules/{}-operate-drawer.vue", frontendPath, moduleKebab, businessKebab, businessKebab);
+        } else if (isFrontendPageTemplate(template, GenConstants.FRONTEND_INDEX_TEMPLATE_PREFIX)
+            || isFrontendPageTemplate(template, GenConstants.FRONTEND_INDEX_TREE_TEMPLATE_PREFIX)) {
+            fileName = StringUtils.format("{}/views/{}/{}/index.vue", frontendPath, moduleKebab, businessKebab);
         }
         return fileName;
     }
@@ -572,6 +653,30 @@ public class TemplateEngineUtils {
                 dicts.add("'" + column.getDictType() + "'");
             }
         }
+    }
+
+    /**
+     * 根据列配置获取字典配置列表，供 soybean 模板生成 useDict 调用。
+     * <p>type 为字典类型，name 为驼峰名称，immediate 表示是否存在列表列使用该字典（列表页需要立即加载）。</p>
+     *
+     * @param genTable 业务表对象
+     * @return 字典配置列表（按列顺序去重）
+     */
+    public static List<Dict> getDictList(GenTable genTable) {
+        Map<String, Dict> dictMap = new LinkedHashMap<>();
+        for (GenTableColumn column : genTable.getColumns()) {
+            if (column.isSuperColumn() || !column.isDictColumn()) {
+                continue;
+            }
+            Dict dict = dictMap.computeIfAbsent(column.getDictType(), type -> Dict.create()
+                .set("type", type)
+                .set("name", StringUtils.toCamelCase(type))
+                .set("immediate", false));
+            if (column.isList()) {
+                dict.set("immediate", true);
+            }
+        }
+        return new ArrayList<>(dictMap.values());
     }
 
     /**

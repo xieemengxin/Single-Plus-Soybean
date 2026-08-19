@@ -89,6 +89,7 @@ create table sys_user (
     gender            char(1)         default '0'                comment '用户性别（0男 1女 2未知）',
     avatar            bigint(20)                                 comment '头像地址',
     password          varchar(100)    default ''                 comment '密码',
+    totp_secret       varchar(64)     default null               comment 'TOTP动态口令密钥（Base32编码 null未绑定）',
     status            char(1)         default '0'                comment '账号状态（0正常 1停用）',
     del_flag          char(1)         default '0'                comment '删除标志（0代表存在 1代表删除）',
     login_ip          varchar(128)    default ''                 comment '最后登录IP',

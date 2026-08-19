@@ -28,6 +28,7 @@ import org.dromara.system.api.MessageService;
 import org.dromara.system.api.domain.PushPayloadDTO;
 import org.dromara.system.api.model.RegisterBody;
 import org.dromara.system.api.model.SocialLoginBody;
+import org.dromara.system.api.model.TotpLoginBody;
 import org.dromara.system.domain.vo.SysClientVo;
 import org.dromara.system.service.ISysClientService;
 import org.dromara.system.service.ISysConfigService;
@@ -36,6 +37,7 @@ import org.dromara.web.domain.vo.LoginVo;
 import org.dromara.web.service.IAuthStrategy;
 import org.dromara.web.service.SysLoginService;
 import org.dromara.web.service.SysRegisterService;
+import org.dromara.web.service.SysTotpService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,6 +64,7 @@ public class AuthController {
     private final ISysConfigService configService;
     private final ISysSocialService socialUserService;
     private final ISysClientService clientService;
+    private final SysTotpService totpService;
     private final ScheduledExecutorService scheduledExecutorService;
     private final MessageService messageService;
 
@@ -91,6 +94,31 @@ public class AuthController {
         // 登录
         LoginVo loginVo = IAuthStrategy.login(body, client, grantType);
 
+        // 开启 TOTP 两步验证且尚未完成动态口令校验时，本次未签发 token，不发送欢迎消息
+        if (StringUtils.isNotBlank(loginVo.getAccessToken())) {
+            sendLoginWelcomeMessage();
+        }
+        return R.ok(loginVo);
+    }
+
+    /**
+     * TOTP 两步验证登录（密码校验通过后提交动态口令完成登录）
+     *
+     * @param body 两步验证登录对象
+     * @return 结果
+     */
+    @PostMapping("/totp/login")
+    public R<LoginVo> totpLogin(@RequestBody TotpLoginBody body) {
+        ValidatorUtils.validate(body);
+        LoginVo loginVo = totpService.totpLogin(body);
+        sendLoginWelcomeMessage();
+        return R.ok(loginVo);
+    }
+
+    /**
+     * 登录成功后延迟发送欢迎消息
+     */
+    private void sendLoginWelcomeMessage() {
         Long userId = LoginHelper.getUserId();
         scheduledExecutorService.schedule(() -> {
             messageService.publishMessage(
@@ -103,7 +131,6 @@ public class AuthController {
                 )
             );
         }, 5, TimeUnit.SECONDS);
-        return R.ok(loginVo);
     }
 
     /**

@@ -78,6 +78,11 @@ public class SysUser extends BaseEntity {
     private String password;
 
     /**
+     * TOTP 动态口令密钥（Base32 编码，null 表示未绑定）
+     */
+    private String totpSecret;
+
+    /**
      * 账号状态（0正常 1停用）
      */
     private String status;

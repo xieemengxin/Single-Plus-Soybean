@@ -259,6 +259,19 @@ public class SysUserController extends BaseController {
     }
 
     /**
+     * 重置用户 TOTP 动态口令绑定（重置后下次登录重新绑定）
+     */
+    @SaCheckPermission("system:user:resetPwd")
+    @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
+    @PutMapping("/resetTotp/{userId}")
+    public R<Void> resetTotp(@PathVariable Long userId) {
+        userService.checkUserAllowed(userId);
+        userService.checkUserDataScope(userId);
+        return toAjax(userService.resetUserTotp(userId));
+    }
+
+    /**
      * 修改用户状态。
      *
      * @param user 用户参数

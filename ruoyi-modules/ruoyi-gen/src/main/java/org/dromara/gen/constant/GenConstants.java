@@ -91,6 +91,11 @@ public interface GenConstants {
     String FRONTEND_TYPE_REACT = "react";
 
     /**
+     * Soybean 前端模板类型，对应模板根目录下的 soybean 目录。
+     */
+    String FRONTEND_TYPE_SOYBEAN = "soybean";
+
+    /**
      * 树根节点值
      */
     String TREE_ROOT_VALUE = "treeRootValue";
@@ -294,6 +299,8 @@ public interface GenConstants {
     String FRONTEND_TYPES_TEMPLATE_NAME = "types.ts" + TEMPLATE_FILE_SUFFIX;
     String FRONTEND_INDEX_TEMPLATE_PREFIX = "index";
     String FRONTEND_INDEX_TREE_TEMPLATE_PREFIX = "index-tree";
+    // soybean 前端模板根目录，其生成文件路径遵循 soybean-admin 目录约定，与 vue/react 不同
+    String SOYBEAN_TEMPLATE_ROOT_PATH = TEMPLATE_ROOT_PATH + "/" + FRONTEND_TYPE_SOYBEAN;
     // 数据库SQL模板
     String SQL_TEMPLATE_ROOT_PATH = TEMPLATE_ROOT_PATH + "/sql";
     String SQL_ORACLE_TEMPLATE_PATH = SQL_TEMPLATE_ROOT_PATH + "/oracle.sql" + TEMPLATE_FILE_SUFFIX;

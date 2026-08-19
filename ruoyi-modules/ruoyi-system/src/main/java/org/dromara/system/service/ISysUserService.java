@@ -198,6 +198,14 @@ public interface ISysUserService {
     int resetUserPwd(Long userId, String password);
 
     /**
+     * 重置用户 TOTP 动态口令绑定（清空密钥，下次登录重新绑定）
+     *
+     * @param userId 用户ID
+     * @return 结果
+     */
+    int resetUserTotp(Long userId);
+
+    /**
      * 通过用户ID删除用户
      *
      * @param userId 用户ID

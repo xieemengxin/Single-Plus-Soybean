@@ -410,6 +410,20 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
     }
 
     /**
+     * 重置用户 TOTP 动态口令绑定（清空密钥，下次登录重新绑定）
+     *
+     * @param userId 用户ID
+     * @return 结果
+     */
+    @Override
+    public int resetUserTotp(Long userId) {
+        return userMapper.lambda()
+            .set(SysUser::getTotpSecret, null)
+            .eq(SysUser::getUserId, userId)
+            .updateCount();
+    }
+
+    /**
      * 新增用户角色信息
      *
      * @param user  用户对象
