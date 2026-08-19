@@ -180,7 +180,10 @@ pnpm build
   - 旧版 `VelocityUtils.java` 替换与 `resource/vm/soy` 拷贝流程已废弃
 
 - **菜单/字典 SQL 更新**
-  - 适配 SQL 位于本目录 `docs/sql`：先执行 `script/sql/ry_vue.sql` 初始化，再依次执行 `docs/sql/sys_menu.sql` 与 `docs/sql/sys_dict_data.sql`
+  - 适配 SQL 位于本目录 `docs/sql`，按数据库类型二选一执行：
+    - MySQL：先执行 `script/sql/ry_vue.sql` 初始化，再依次执行 `docs/sql/sys_menu.sql` 与 `docs/sql/sys_dict_data.sql`
+    - PostgreSQL：先执行 `script/sql/postgres/postgres_ry_vue.sql` 初始化，再依次执行 `docs/sql/postgres/sys_menu.sql` 与 `docs/sql/postgres/sys_dict_data.sql`
+  - workflow 菜单/字典的停用与适配语句对应可选脚本 `ry_workflow.sql` / `postgres_ry_workflow.sql`，未执行该脚本时相关 UPDATE 命中 0 行，无副作用
   - 执行后请清理字典 Redis 缓存或重启后端服务
 
 ## 📝 开发指南

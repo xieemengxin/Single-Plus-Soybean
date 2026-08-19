@@ -137,6 +137,7 @@ create table if not exists sys_user
     gender      char         default '0'::bpchar,
     avatar      int8,
     password    varchar(100) default ''::varchar,
+    totp_secret varchar(64)  default null::varchar,
     status      char         default '0'::bpchar,
     del_flag    char         default '0'::bpchar,
     login_ip    varchar(128) default ''::varchar,
@@ -166,6 +167,7 @@ comment on column sys_user.phone_number is '手机号码';
 comment on column sys_user.gender       is '用户性别（0男 1女 2未知）';
 comment on column sys_user.avatar       is '头像地址';
 comment on column sys_user.password     is '密码';
+comment on column sys_user.totp_secret  is 'TOTP动态口令密钥（Base32编码 null未绑定）';
 comment on column sys_user.status       is '账号状态（0正常 1停用）';
 comment on column sys_user.del_flag     is '删除标志（0代表存在 1代表删除）';
 comment on column sys_user.login_ip     is '最后登陆IP';
@@ -181,9 +183,9 @@ comment on column sys_user.remark       is '备注';
 
 -- 初始化-用户信息表数据
 -- ----------------------------
-insert into sys_user values(1761100000000000001, 1761000000000000103, 'admin', '疯狂的狮子Li', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', null, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', '0', '127.0.0.1', now(), 1761000000000000103, 1761100000000000001, now(), null, null, '管理员');
-insert into sys_user VALUES(1761100000000000003, 1761000000000000108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', now(), 1761000000000000103, 1761100000000000001, now(), 1761100000000000003, now(), NULL);
-insert into sys_user VALUES(1761100000000000004, 1761000000000000102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', '0', '0', '127.0.0.1', now(), 1761000000000000103, 1761100000000000001, now(), 1761100000000000004, now(), NULL);
+insert into sys_user values(1761100000000000001, 1761000000000000103, 'admin', '疯狂的狮子Li', 'sys_user', 'crazyLionLi@163.com', '15888888888', '1', null, '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', null, '0', '0', '127.0.0.1', now(), 1761000000000000103, 1761100000000000001, now(), null, null, '管理员');
+insert into sys_user VALUES(1761100000000000003, 1761000000000000108, 'test', '本部门及以下 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', null, '0', '0', '127.0.0.1', now(), 1761000000000000103, 1761100000000000001, now(), 1761100000000000003, now(), NULL);
+insert into sys_user VALUES(1761100000000000004, 1761000000000000102, 'test1', '仅本人 密码666666', 'sys_user', '', '', '0', null, '$2a$10$b8yUzN0C71sbz.PhNOCgJe.Tu1yWC3RNrTyjSQ8p1W0.aaUXUJ.Ne', null, '0', '0', '127.0.0.1', now(), 1761000000000000103, 1761100000000000001, now(), 1761100000000000004, now(), NULL);
 
 -- ----------------------------
 -- 3、岗位信息表
