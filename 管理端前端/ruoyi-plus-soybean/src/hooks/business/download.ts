@@ -24,7 +24,7 @@ export function useDownload() {
 
   /** 获取通用请求头 */
   const getCommonHeaders = (contentType = 'application/octet-stream') => ({
-    Authorization: localStg.get('token') || '',
+    Authorization: `Bearer ${localStg.get('token')}`,
     Clientid: import.meta.env.VITE_APP_CLIENT_ID!,
     'Content-Type': contentType
   });

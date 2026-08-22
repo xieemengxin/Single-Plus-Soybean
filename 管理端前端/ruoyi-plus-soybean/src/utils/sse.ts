@@ -14,7 +14,7 @@ export const initSSE = (url: string) => {
   if (import.meta.env.VITE_APP_SSE === 'N' || !token) {
     return;
   }
-  const sseUrl = `${url}?Authorization=${token}&clientid=${import.meta.env.VITE_APP_CLIENT_ID}`;
+  const sseUrl = `${url}?Authorization=Bearer ${token}&clientid=${import.meta.env.VITE_APP_CLIENT_ID}`;
   const { data, error } = useEventSource(sseUrl, [], {
     autoReconnect: {
       retries: 5,

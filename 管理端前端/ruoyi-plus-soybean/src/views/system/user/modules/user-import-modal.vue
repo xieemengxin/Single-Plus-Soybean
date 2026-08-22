@@ -20,7 +20,7 @@ const { download } = useDownload();
 const { baseURL } = getServiceBaseURL(import.meta.env);
 
 const headers: Record<string, string> = {
-  Authorization: getToken(),
+  Authorization: `Bearer ${getToken()}`,
   clientid: import.meta.env.VITE_APP_CLIENT_ID!
 };
 

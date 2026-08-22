@@ -12,7 +12,7 @@ export const initWebSocket = (url: string) => {
   if (import.meta.env.VITE_APP_WEBSOCKET === 'N' || !token) {
     return;
   }
-  const socketUrl = `${url}?Authorization=${token}&clientid=${import.meta.env.VITE_APP_CLIENT_ID}`;
+  const socketUrl = `${url}?Authorization=Bearer ${token}&clientid=${import.meta.env.VITE_APP_CLIENT_ID}`;
   useWebSocket(socketUrl, {
     autoReconnect: {
       // 重连最大次数

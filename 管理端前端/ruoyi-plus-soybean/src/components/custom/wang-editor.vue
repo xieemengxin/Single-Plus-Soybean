@@ -37,7 +37,7 @@ const editorConfig: Partial<IEditorConfig> = {
       fieldName: 'file',
       meta: {},
       headers: {
-        Authorization: getToken(),
+        Authorization: `Bearer ${getToken()}`,
         clientid: import.meta.env.VITE_APP_CLIENT_ID!
       },
       metaWithUrl: false,
